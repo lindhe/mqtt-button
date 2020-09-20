@@ -9,30 +9,37 @@
 import sys
 import argparse
 import paho.mqtt.publish as pub
-import time
+from signal import pause
 from datetime import datetime as dt
 from gpiozero.pins.mock import MockFactory
 from gpiozero import Button
 
 
-def main(topic: str, message: str, hostname: str, gpio_pin: int, mocked: bool,
-         inverted: bool, interval: int):
-    """ GPIO initialization and main loop. """
-    if mocked:
-        button = Button(gpio_pin, pin_factory=MockFactory())
-    else:
-        button = Button(gpio_pin)
-    while True:
-        if mocked:
-            input("Please press Enter...")
-        else:
-            if inverted:
-                button.wait_for_release()
-            else:
-                button.wait_for_press()
-        print(f"The button was pressed at {str(dt.now())}!")
-        pub.single(topic, payload=message, hostname=hostname)
-        time.sleep(interval)
+def main(topic: str, pressed_msg: str, released_msg: str, hostname: str,
+         gpio_pin: int, mocked: bool, inverted: bool):
+    """ GPIO initialization and registering signal event handlers. """
+    pin_factory = MockFactory() if mocked else None
+    button = Button(gpio_pin, pin_factory=pin_factory)
+    if inverted:
+        pressed_msg, released_msg = released_msg, pressed_msg
+
+    def pressed_handler():
+        event(topic=topic, event=pressed_msg, hostname=hostname)
+
+    def released_handler():
+        event(topic=topic, event=released_msg, hostname=hostname)
+
+    button.when_pressed = pressed_handler
+    button.when_released = released_handler
+
+    print("Button is ready!")
+    pause()
+
+
+def event(topic="/", event="PRESSED", hostname="localhost"):
+    """ Broadcasts an event. """
+    print(f"Registered {event.lower()} at {str(dt.now())}")
+    pub.single(topic, payload=event.upper(), hostname=hostname)
 
 
 if __name__ == '__main__':
@@ -43,14 +50,14 @@ if __name__ == '__main__':
     p.add_argument('-H', '--hostname', help="Hostname to MQTT server",
                    default="localhost")
     p.add_argument('-g', '--gpio-pin', help="GPIO pin for the button",
-                   type=int, default=17)
-    p.add_argument('-i', '--interval', help="Interval with which to check" +
-                   " button state", type=int, default=30)
+                   type=int, default=24)
     p.add_argument('--inverted', help="Invert button state " +
                    "(default: closed circuit == pressed)",
                    action="store_true")
-    p.add_argument('-m', '--message', help="Payload for MQTT message",
-                   default="")
+    p.add_argument('-p', '--pressed-message', default="PRESSED",
+                   help="Payload for MQTT message when button is pressed")
+    p.add_argument('-r', '--released-message', default="RELEASED",
+                   help="Payload for MQTT message when button is released")
     p.add_argument('--mocked',
                    help="Use keyboard input instead of GPIO button",
                    action="store_true")
@@ -61,12 +68,12 @@ if __name__ == '__main__':
     try:
         main(
             topic=args.topic,
-            message=args.message,
+            pressed_msg=args.pressed_message,
+            released_msg=args.released_message,
             hostname=args.hostname,
             gpio_pin=args.gpio_pin,
             mocked=args.mocked,
-            inverted=args.inverted,
-            interval=args.interval
+            inverted=args.inverted
         )
     except KeyboardInterrupt:
         sys.exit("\nInterrupted by ^C\n")
