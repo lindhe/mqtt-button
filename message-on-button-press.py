@@ -9,15 +9,22 @@
 import sys
 import argparse
 import paho.mqtt.publish as pub
+from gpiozero.pins.mock import MockFactory
 from gpiozero import Button
 
 
-def main(topic: str, message: str, hostname: str, gpio_pin: int):
+def main(topic: str, message: str, hostname: str, gpio_pin: int, mocked: bool):
     """ GPIO initialization and main loop. """
-    button = Button(gpio_pin)
+    if mocked:
+        button = Button(gpio_pin, pin_factory=MockFactory())
+    else:
+        button = Button(gpio_pin)
     while True:
         # TODO: Make sure logic with press/release makes sense
-        button.wait_for_release()
+        if mocked:
+            input("Please press Enter...")
+        else:
+            button.wait_for_release()
         print("The button was pressed!")
         pub.single(topic, payload=message, hostname=hostname)
 
@@ -33,6 +40,9 @@ if __name__ == '__main__':
                    type=int, default=17)
     p.add_argument('-m', '--message', help="Payload for MQTT message",
                    default="")
+    p.add_argument('--mocked',
+                   help="Use keyboard input instead of GPIO button",
+                   action="store_true")
     p.add_argument('-t', '--topic', help="MQTT topic to publish to",
                    default="/")
     # Run:
@@ -42,7 +52,8 @@ if __name__ == '__main__':
             topic=args.topic,
             message=args.message,
             hostname=args.hostname,
-            gpio_pin=args.gpio_pin
+            gpio_pin=args.gpio_pin,
+            mocked=args.mocked
         )
     except KeyboardInterrupt:
         sys.exit("\nInterrupted by ^C\n")
