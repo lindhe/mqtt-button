@@ -13,18 +13,21 @@ from gpiozero.pins.mock import MockFactory
 from gpiozero import Button
 
 
-def main(topic: str, message: str, hostname: str, gpio_pin: int, mocked: bool):
+def main(topic: str, message: str, hostname: str, gpio_pin: int, mocked: bool,
+         inverted: bool):
     """ GPIO initialization and main loop. """
     if mocked:
         button = Button(gpio_pin, pin_factory=MockFactory())
     else:
         button = Button(gpio_pin)
     while True:
-        # TODO: Make sure logic with press/release makes sense
         if mocked:
             input("Please press Enter...")
         else:
-            button.wait_for_release()
+            if inverted:
+                button.wait_for_release()
+            else:
+                button.wait_for_press()
         print("The button was pressed!")
         pub.single(topic, payload=message, hostname=hostname)
 
@@ -38,6 +41,9 @@ if __name__ == '__main__':
                    default="localhost")
     p.add_argument('-g', '--gpio-pin', help="GPIO pin for the button",
                    type=int, default=17)
+    p.add_argument('--inverted', help="Invert button state " +
+                   "(default: closed circuit == pressed)",
+                   action="store_true")
     p.add_argument('-m', '--message', help="Payload for MQTT message",
                    default="")
     p.add_argument('--mocked',
@@ -53,7 +59,8 @@ if __name__ == '__main__':
             message=args.message,
             hostname=args.hostname,
             gpio_pin=args.gpio_pin,
-            mocked=args.mocked
+            mocked=args.mocked,
+            inverted=args.inverted
         )
     except KeyboardInterrupt:
         sys.exit("\nInterrupted by ^C\n")
