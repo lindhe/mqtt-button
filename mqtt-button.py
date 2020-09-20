@@ -10,6 +10,7 @@ import sys
 import argparse
 import paho.mqtt.publish as pub
 import time
+from datetime import datetime as dt
 from gpiozero.pins.mock import MockFactory
 from gpiozero import Button
 
@@ -29,7 +30,7 @@ def main(topic: str, message: str, hostname: str, gpio_pin: int, mocked: bool,
                 button.wait_for_release()
             else:
                 button.wait_for_press()
-        print("The button was pressed!")
+        print(f"The button was pressed at {str(dt.now())}!")
         pub.single(topic, payload=message, hostname=hostname)
         time.sleep(interval)
 
