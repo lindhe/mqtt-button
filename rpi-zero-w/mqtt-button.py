@@ -14,6 +14,8 @@ from datetime import datetime as dt
 from gpiozero.pins.mock import MockFactory
 from gpiozero import Button
 
+__version__ = '1.0.0'
+
 
 def main(topic: str, pressed_msg: str, released_msg: str, hostname: str,
          gpio_pin: int, mocked: bool, inverted: bool):
@@ -63,6 +65,7 @@ if __name__ == '__main__':
                    action="store_true")
     p.add_argument('-t', '--topic', help="MQTT topic to publish to",
                    default="/")
+    p.add_argument('--version', action='version', version=__version__)
     # Run:
     args = p.parse_args()
     try:
