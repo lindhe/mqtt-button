@@ -6,13 +6,14 @@
 
 """ A simple program that sends an MQTT messsage upon GPIO button press. """
 
-import sys
 import argparse
-import paho.mqtt.publish as pub
-from signal import pause
+import sys
 from datetime import datetime as dt
-from gpiozero.pins.mock import MockFactory
+from signal import pause
+
+import paho.mqtt.publish as pub
 from gpiozero import Button
+from gpiozero.pins.mock import MockFactory
 
 __version__ = '1.0.0'
 
