@@ -30,6 +30,6 @@ jobs:
           use-pycodestyle: false
           use-flake8: false
           use-black: false
-          use-isort: false
+          use-isort: true
           use-mypy: true
           extra-mypy-options: "--ignore-missing-imports"
