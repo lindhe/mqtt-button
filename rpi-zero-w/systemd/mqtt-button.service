@@ -3,7 +3,9 @@ Description=Button watcher
 After=multi-user.target
 
 [Service]
+Type=simple
 ExecStart=/usr/bin/env python3 /home/pi/scripts/mqtt-button.py
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
